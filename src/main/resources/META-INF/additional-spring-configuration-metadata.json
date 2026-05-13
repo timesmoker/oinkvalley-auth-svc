@@ -1,0 +1,39 @@
+{
+	"properties": [
+		{
+			"name": "jwt.secret",
+			"type": "java.lang.String",
+			"description": "HS256 대칭키(UTF-8, min 32 bytes). auth 발급·board 검증에 동일 값. env: JWT_SECRET."
+		},
+		{
+			"name": "jwt.expiration-seconds",
+			"type": "java.lang.Long",
+			"description": "액세스 JWT TTL 및 HttpOnly 쿠키 Max-Age(초)."
+		},
+		{
+			"name": "jwt.cookie.name",
+			"type": "java.lang.String",
+			"description": "HttpOnly 액세스 토큰 쿠키 이름."
+		},
+		{
+			"name": "jwt.cookie.secure",
+			"type": "java.lang.Boolean",
+			"description": "쿠키 Secure 플래그."
+		},
+		{
+			"name": "jwt.cookie.same-site",
+			"type": "java.lang.String",
+			"description": "쿠키 SameSite(Strict, Lax, None). Java 필드: cookie.sameSite."
+		},
+		{
+			"name": "jwt.cookie.path",
+			"type": "java.lang.String",
+			"description": "쿠키 Path."
+		},
+		{
+			"name": "jwt.cookie.domain",
+			"type": "java.lang.String",
+			"description": "쿠키 Domain. 비우면 Domain 속성 생략."
+		}
+	]
+}
