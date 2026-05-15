@@ -19,14 +19,11 @@ public class DatabaseUserDetailsService implements UserDetailsService {
 
 	private final UserRepository userRepository;
 
-	/**
-	 * {@code username} 파라미터에는 로그인 요청의 이메일(정규화된 문자열)이 전달된다.
-	 */
 	@Override
-	public UserDetails loadUserByUsername(String username) {
-		String email = username.trim();
-		User user = userRepository.findByEmail(email)
-				.orElseThrow(() -> new UsernameNotFoundException(email));
+	public UserDetails loadUserByUsername(String email) {
+		// 이름만 username 이고 우리는 email로 쓰고 있음
+		User user = userRepository.findByEmail(email.trim())
+				.orElseThrow(() -> new UsernameNotFoundException(email.trim()));
 		List<SimpleGrantedAuthority> authorities = new ArrayList<>();
 		for (String r : user.getRoles()) {
 			if (r == null || r.isBlank()) {
@@ -38,6 +35,6 @@ public class DatabaseUserDetailsService implements UserDetailsService {
 		if (authorities.isEmpty()) {
 			authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
 		}
-		return new AuthUserPrincipal(user.getId(), user.getUsername(), user.getPasswordHash(), authorities);
+		return new AuthUserPrincipal(user.getId(), user.getEmail(), user.getPasswordHash(), authorities);
 	}
 }

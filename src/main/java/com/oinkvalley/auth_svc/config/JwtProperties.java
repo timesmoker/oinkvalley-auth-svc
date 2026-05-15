@@ -8,6 +8,8 @@ import org.springframework.stereotype.Component;
 
 /**
  * 액세스 JWT 서명/TTL 및 로그인 응답 {@code Set-Cookie} 설정. 키는 {@code jwt.*}.
+ * 기본값 여기 적지 말자 전부 resources/application.properties 에 적어두자...
+ * 그리고 !!! SOT는 무 조 건 infra 폴더에 있는 값 !!!
  */
 @Component
 @ConfigurationProperties(prefix = "jwt")
@@ -16,18 +18,19 @@ import org.springframework.stereotype.Component;
 public class JwtProperties {
 
 	private String secret;
-	private long expirationSeconds = 3600;
+	private long expirationSeconds;
+
 	@NestedConfigurationProperty
 	private Cookie cookie = new Cookie();
 
 	@Getter
 	@Setter
 	public static class Cookie {
-		private String name = "access_token";
-		private boolean secure = false;
-		private String sameSite = "Lax";
-		private String path = "/";
-		private String domain = "";
+		private String name;
+		private boolean secure;
+		private String sameSite;
+		private String path;
+		private String domain;
 	}
 
 	public String cookieDomainTrimmed() {

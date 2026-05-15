@@ -4,11 +4,10 @@ import com.oinkvalley.auth_svc.db.domain.User;
 import com.oinkvalley.auth_svc.db.repository.UserRepository;
 import com.oinkvalley.auth_svc.dto.LoginRequest;
 import com.oinkvalley.auth_svc.dto.SignUpRequest;
-import com.oinkvalley.auth_svc.dto.SignUpResponse;
 import com.oinkvalley.auth_svc.config.JwtProperties;
 import com.oinkvalley.auth_svc.security.AuthUserPrincipal;
 import com.oinkvalley.auth_svc.security.JwtTokenService;
-import lombok.RequiredArgsConstructor;
+import com.oinkvalley.auth_svc.client.UserProfileClient;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -17,46 +16,80 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 public class AuthService {
 
 	private final AuthenticationManager authenticationManager;
 	private final JwtTokenService jwtTokenService;
 	private final UserRepository userRepository;
+	private final UserProfileClient userProfileClient;
 	private final PasswordEncoder passwordEncoder;
 	private final JwtProperties jwtProperties;
+	private final TransactionTemplate transactionTemplate;
 
-	@Transactional
-	public SignUpResponse signUp(SignUpRequest request) {
-		if (userRepository.existsByUsername(request.username())) {
-			throw new DuplicateUserException("Username already taken");
+	public AuthService(
+			AuthenticationManager authenticationManager,
+			JwtTokenService jwtTokenService,
+			UserRepository userRepository,
+			UserProfileClient userProfileClient,
+			PasswordEncoder passwordEncoder,
+			JwtProperties jwtProperties,
+			PlatformTransactionManager transactionManager) {
+		this.authenticationManager = authenticationManager;
+		this.jwtTokenService = jwtTokenService;
+		this.userRepository = userRepository;
+		this.userProfileClient = userProfileClient;
+		this.passwordEncoder = passwordEncoder;
+		this.jwtProperties = jwtProperties;
+		this.transactionTemplate = new TransactionTemplate(transactionManager);
+	}
+
+	public void signUp(SignUpRequest request) {
+		String email = request.email().trim();
+		String nickname = request.nickname().trim();
+		if (nickname.isEmpty()) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Nickname is required");
 		}
-		if (userRepository.existsByEmail(request.email())) {
+		if (userRepository.existsByEmail(email)) {
 			throw new DuplicateUserException("Email already registered");
 		}
+		if (userProfileClient.existsNickname(nickname)) {
+			throw new DuplicateUserException("Nickname already taken");
+		}
+		User user = transactionTemplate.execute(status -> persistNewUser(email, request.password()));
+		try {
+			userProfileClient.createProfile(user.getId(), nickname);
+		} catch (Exception e) {
+			transactionTemplate.executeWithoutResult(status -> userRepository.deleteById(user.getId()));
+			throw new ResponseStatusException(
+					HttpStatus.BAD_GATEWAY, "Failed to create user profile", e);
+		}
+	}
+
+	private User persistNewUser(String email, String password) {
 		List<String> roles = new ArrayList<>();
 		roles.add("USER");
 		User user = User.builder()
-				.email(request.email().trim())
-				.username(request.username().trim())
-				.passwordHash(passwordEncoder.encode(request.password()))
+				.email(email)
+				.passwordHash(passwordEncoder.encode(password))
 				.provider(null)
 				.providerId(null)
 				.roles(roles)
 				.build();
 		try {
-			userRepository.save(user);
+			return userRepository.save(user);
 		} catch (DataIntegrityViolationException e) {
-			throw new DuplicateUserException("User already exists");
+			throw new DuplicateUserException("Email already registered");
 		}
-		return new SignUpResponse(user.getId(), user.getUsername(), user.getEmail());
 	}
 
 	public IssuedLogin login(LoginRequest request) {
@@ -76,7 +109,7 @@ public class AuthService {
 				.filter(s -> !s.isEmpty())
 				.toList();
 		String token = jwtTokenService.issueAccessToken(principal.getUserId(), rolesForJwt);
-		return new IssuedLogin(token, "Bearer", jwtProperties.getExpirationSeconds());
+		return new IssuedLogin(token, jwtProperties.getExpirationSeconds());
 	}
 
 	/** JWT {@code roles} 배열에는 {@code ROLE_} 접두사 없이 넣는 합의(board handoff 6.4). */

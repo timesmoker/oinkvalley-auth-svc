@@ -31,19 +31,16 @@ public class User {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Column(name = "id", nullable = false)
 	private Long id;
 
 	@NotBlank
 	@Email
-	@Column(nullable = false, unique = true)
+	@Column(name = "email", nullable = false, unique = true, length = 255)
 	private String email;
 
 	@NotBlank
-	@Column(nullable = false, unique = true)
-	private String username;
-
-	@NotBlank
-	@Column(name = "password_hash", nullable = false)
+	@Column(name = "password_hash", nullable = false, length = 128)
 	private String passwordHash;
 
 	@Column
