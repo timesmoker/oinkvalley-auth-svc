@@ -98,7 +98,7 @@ JSON은 **camelCase**다. 오류 응답은 현재 **본문 없이** 상태 코�
 
 ### 응답·요청 필드 요약
 
-**SignUpRequest:** `email`, `password`, `username`(닉네임), `roles`(선택, 저장·권한에 반영 안 함 — 서버가 `USER`만 부여)
+**SignUpRequest:** `email`, `password`, `username`(닉네임), `roles`(선택, 저장·권한에 반영 안 함 — 서버가 `TEMP_USER`만 부여)
 
 **SignUpResponse:** `id`, `username`, `email`
 

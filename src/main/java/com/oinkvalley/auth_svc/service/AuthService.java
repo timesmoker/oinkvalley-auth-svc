@@ -77,7 +77,7 @@ public class AuthService {
 
 	private User persistNewUser(String email, String password) {
 		List<String> roles = new ArrayList<>();
-		roles.add("USER");
+		roles.add("TEMP_USER");
 		User user = User.builder()
 				.email(email)
 				.passwordHash(passwordEncoder.encode(password))
