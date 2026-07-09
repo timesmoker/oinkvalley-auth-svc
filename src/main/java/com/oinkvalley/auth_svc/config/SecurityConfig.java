@@ -38,6 +38,7 @@ public class SecurityConfig {
 						.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 						.requestMatchers(HttpMethod.GET, "/health").permitAll()
 						.requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
+						.requestMatchers(HttpMethod.POST, "/auth/guest").permitAll()
 						.requestMatchers(HttpMethod.POST, "/auth/logout").permitAll()
 						.requestMatchers(HttpMethod.POST, "/auth/signup").permitAll()
 						.requestMatchers(HttpMethod.GET, "/auth/me").authenticated()

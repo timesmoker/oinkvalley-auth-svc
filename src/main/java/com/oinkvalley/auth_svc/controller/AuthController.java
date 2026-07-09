@@ -44,6 +44,21 @@ public class AuthController {
 				.build();
 	}
 
+	/**
+	 * 게스트 로그인. 성공 시 200 + 쿠키, 비활성·실패 시 204(오류 응답 없음 — 프런트는 조용히 무시).
+	 */
+	@PostMapping("/guest")
+	public ResponseEntity<Void> guestLogin() {
+		return authService.guestLogin()
+				.map(issued -> {
+					var cookie = accessTokenCookieFactory.issue(issued.jwt(), issued.expiresInSeconds());
+					return ResponseEntity.ok()
+							.header(HttpHeaders.SET_COOKIE, cookie.toString())
+							.<Void>build();
+				})
+				.orElseGet(() -> ResponseEntity.noContent().build());
+	}
+
 	@PostMapping("/logout")
 	public ResponseEntity<Void> logout() {
 		var clear = accessTokenCookieFactory.clear();
