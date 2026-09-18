@@ -1,6 +1,7 @@
 package com.oinkvalley.auth_svc.config;
 
-import com.oinkvalley.auth_svc.security.JwtAuthenticationFilter;
+import com.oinkvalley.auth_svc.security.JwtPrincipalConverter;
+import com.oinkvalley.auth_svc.security.SecurityJsonHandlers;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,15 +14,13 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.access.intercept.AuthorizationFilter;
-
-import jakarta.servlet.http.HttpServletResponse;
 
 @Configuration
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-	private final JwtAuthenticationFilter jwtAuthenticationFilter;
+	private final JwtPrincipalConverter jwtPrincipalConverter;
+	private final SecurityJsonHandlers securityJsonHandlers;
 
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -30,9 +29,9 @@ public class SecurityConfig {
 				.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.exceptionHandling(ex -> ex
 						.authenticationEntryPoint((request, response, authException) ->
-								response.sendError(HttpServletResponse.SC_UNAUTHORIZED))
+								securityJsonHandlers.writeUnauthorized(response))
 						.accessDeniedHandler((request, response, accessDeniedException) ->
-								response.sendError(HttpServletResponse.SC_UNAUTHORIZED))
+								securityJsonHandlers.writeForbidden(response))
 				)
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
@@ -44,7 +43,13 @@ public class SecurityConfig {
 						.requestMatchers(HttpMethod.GET, "/auth/me").authenticated()
 						.anyRequest().denyAll()
 				)
-				.addFilterBefore(jwtAuthenticationFilter, AuthorizationFilter.class)
+				.oauth2ResourceServer(oauth2 -> oauth2
+						.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtPrincipalConverter))
+						.authenticationEntryPoint((request, response, authException) ->
+								securityJsonHandlers.writeInvalidToken(response))
+						.accessDeniedHandler((request, response, accessDeniedException) ->
+								securityJsonHandlers.writeForbidden(response))
+				)
 				.build();
 	}
 
