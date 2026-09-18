@@ -2,7 +2,7 @@
 
 Spring Boot **인증 REST API**다. 사용자를 PostgreSQL에 두고, **이메일 + 비밀번호**로 로그인한 뒤 **HS256 JWT**를 발급한다. 로그인 응답에서는 **`Set-Cookie` HttpOnly** 로 JWT를 내려주고, JSON 본문에는 **`tokenType`**, **`expiresInSeconds`** 만 온다(토큰 문자열은 본문에 없음). **`GET /auth/me`** 등 보호 API는 **`Authorization: Bearer <token>`** 만 검증한다(쿠키에서 JWT를 읽지 않는다). 가입 시 **`username`** 은 닉네임, 로그인 식별자는 **`email`** 이다.
 
-의존성·JDK·Gradle 버전 요약은 [DEPENDENCIES.md](DEPENDENCIES.md) 를 본다.
+의존성·JDK·플러그인 버전은 [build.gradle](build.gradle) 을 본다.
 
 **단일 진실 소스(SOT):** 배포·운영에서 쓰는 값의 기준은 무조건 **infra 폴더**(Helm values, 매니페스트, 환경 변수 정의 등)에 있다. 이 저장소의 `application.properties` 와 여기 문서는 편의·개발용 설명이며, 충돌하면 **infra 쪽이 정답**이다.
 
