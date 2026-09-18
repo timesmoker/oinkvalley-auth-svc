@@ -3,6 +3,9 @@
 # Build (JDK)
 FROM eclipse-temurin:21-jdk-alpine AS build
 WORKDIR /workspace
+ARG GITHUB_ACTOR
+ARG GITHUB_TOKEN
+ENV GITHUB_ACTOR=$GITHUB_ACTOR GITHUB_TOKEN=$GITHUB_TOKEN
 COPY gradlew settings.gradle build.gradle ./
 COPY gradle gradle
 COPY src src
