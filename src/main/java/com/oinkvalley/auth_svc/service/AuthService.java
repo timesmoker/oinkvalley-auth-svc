@@ -9,6 +9,10 @@ import com.oinkvalley.auth_svc.config.JwtProperties;
 import com.oinkvalley.auth_svc.security.AuthUserPrincipal;
 import com.oinkvalley.auth_svc.security.JwtTokenService;
 import com.oinkvalley.auth_svc.client.UserProfileClient;
+import com.oinkvalley.auth_svc.messaging.event.GuestCreatedEvent;
+import com.oinkvalley.auth_svc.messaging.event.UserCreatedEvent;
+import com.oinkvalley.auth_svc.messaging.publisher.GuestEventPublisher;
+import com.oinkvalley.auth_svc.messaging.publisher.UserEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -43,6 +47,8 @@ public class AuthService {
 	private final PasswordEncoder passwordEncoder;
 	private final JwtProperties jwtProperties;
 	private final GuestProperties guestProperties;
+	private final UserEventPublisher userEventPublisher;
+	private final GuestEventPublisher guestEventPublisher;
 	private final TransactionTemplate transactionTemplate;
 
 	public AuthService(
@@ -53,6 +59,8 @@ public class AuthService {
 			PasswordEncoder passwordEncoder,
 			JwtProperties jwtProperties,
 			GuestProperties guestProperties,
+			UserEventPublisher userEventPublisher,
+			GuestEventPublisher guestEventPublisher,
 			PlatformTransactionManager transactionManager) {
 		this.authenticationManager = authenticationManager;
 		this.jwtTokenService = jwtTokenService;
@@ -61,6 +69,8 @@ public class AuthService {
 		this.passwordEncoder = passwordEncoder;
 		this.jwtProperties = jwtProperties;
 		this.guestProperties = guestProperties;
+		this.userEventPublisher = userEventPublisher;
+		this.guestEventPublisher = guestEventPublisher;
 		this.transactionTemplate = new TransactionTemplate(transactionManager);
 	}
 
@@ -84,6 +94,7 @@ public class AuthService {
 			throw new ResponseStatusException(
 					HttpStatus.BAD_GATEWAY, "Failed to create user profile", e);
 		}
+		userEventPublisher.publish(new UserCreatedEvent(user.getId()));
 	}
 
 	private User persistNewUser(String email, String password) {
@@ -145,6 +156,8 @@ public class AuthService {
 				transactionTemplate.executeWithoutResult(status -> userRepository.deleteById(guest.getId()));
 				throw new IllegalStateException("Failed to create guest profile", e);
 			}
+			userEventPublisher.publish(new UserCreatedEvent(guest.getId()));
+			guestEventPublisher.publish(new GuestCreatedEvent(guest.getId()));
 			return guest;
 		}
 		throw new IllegalStateException("Failed to allocate guest identifier");
